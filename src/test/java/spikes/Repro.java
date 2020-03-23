@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 public class Repro {
   static volatile Object hole;
@@ -22,16 +23,23 @@ public class Repro {
   public void recompileFst() throws IOException {
     try (InputStreamDataInput in =
         new InputStreamDataInput(
-            getClass().getClassLoader().getResourceAsStream("fst-17291407798783309064.fst"))) {
-      FST<CharsRef> fst = new FST<>(in, CharSequenceOutputs.getSingleton());
-
+            new GZIPInputStream(
+                getClass()
+                    .getClassLoader()
+                    .getResourceAsStream("fst-17291407798783309064.fst.gz")))) {
       try (Progress progress = new Progress(ConsoleAware.newConsoleProgressView())) {
+        FST<CharsRef> originalFst;
+        try (Tracker t = progress.newGenericSubtask("Reading FST").start()) {
+          originalFst = new FST<>(in, CharSequenceOutputs.getSingleton());
+        }
+
         for (float oversizingFactor : List.of(0f, 0.2f, 0.4f, 0.6f, 0.8f, 1f)) {
+          FST<CharsRef> fst;
           try (Tracker t =
               progress
                   .newGenericSubtask("FST construction (of=" + oversizingFactor + ")")
                   .start()) {
-            fst = recompile(fst, oversizingFactor);
+            fst = recompile(originalFst, oversizingFactor);
             t.attribute("FST RAM", "%,d bytes", fst.ramBytesUsed());
             t.attribute("Oversizing factor", "%.2f", oversizingFactor);
           }
