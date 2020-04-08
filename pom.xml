@@ -31,9 +31,18 @@
   <dependencies>
     <dependency>
       <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-core-override</artifactId>
+      <version>9.0.0-SNAPSHOT</version>
+      <scope>system</scope>
+      <systemPath>${basedir}/lib/lucene-core-9.0.0-SNAPSHOT.jar</systemPath>
+    </dependency>
+    <!--
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-core</artifactId>
       <version>8.5.0</version>
     </dependency>
+    -->
     <dependency>
       <groupId>com.carrotsearch.progresso</groupId>
       <artifactId>progresso</artifactId>

@@ -6,9 +6,9 @@ import com.carrotsearch.progresso.Tracker;
 import com.carrotsearch.progresso.views.console.ConsoleAware;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.CharSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.IntsRefFSTEnum;
 import org.junit.Test;
 
@@ -54,25 +54,23 @@ public class Repro {
   }
 
   private FST<CharsRef> recompile(FST<CharsRef> fst, float oversizingFactor) throws IOException {
-    final Builder<CharsRef> builder =
-        new Builder<>(
+    final FSTCompiler<CharsRef> builder =
+        new FSTCompiler.Builder<>(
             FST.INPUT_TYPE.BYTE4,
-            0,
-            0,
-            /* share suffix */ true,
-            /* share non-singleton nodes */ true,
-            /* shareMaxTailLength */ Integer.MAX_VALUE,
-            CharSequenceOutputs.getSingleton(),
-            /* allow array arcs */ true,
-            15);
-    builder.setDirectAddressingMaxOversizingFactor(oversizingFactor);
+            CharSequenceOutputs.getSingleton())
+            .shouldShareSuffix(true)
+            .shouldShareNonSingletonNodes(true)
+            .shareMaxTailLength(Integer.MAX_VALUE)
+            .allowFixedLengthArcs(true)
+            .directAddressingMaxOversizingFactor(oversizingFactor)
+        .build();
 
     IntsRefFSTEnum<CharsRef> i = new IntsRefFSTEnum<>(fst);
     IntsRefFSTEnum.InputOutput<CharsRef> c;
     while ((c = i.next()) != null) {
       builder.add(c.input, CharsRef.deepCopyOf(c.output));
     }
-    return builder.finish();
+    return builder.compile();
   }
 
   private int walk(FST<CharsRef> read) throws IOException {
